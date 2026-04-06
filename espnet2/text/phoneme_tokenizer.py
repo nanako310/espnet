@@ -9,6 +9,9 @@ import jamo
 from packaging.version import parse as V
 from typeguard import typechecked
 
+import os
+import requests
+
 from espnet2.text.abs_tokenizer import AbsTokenizer
 
 g2p_choices = [
@@ -20,6 +23,7 @@ g2p_choices = [
     "pyopenjtalk_accent",
     "pyopenjtalk_accent_with_pause",
     "pyopenjtalk_prosody",
+    "pyopenjtalk_prosody_kagoshimashi",
     "pypinyin_g2p",
     "pypinyin_g2p_phone",
     "pypinyin_g2p_phone_without_prosody",
@@ -176,6 +180,50 @@ def pyopenjtalk_g2p_prosody(text: str, drop_unvoiced_vowels: bool = True) -> Lis
 
     return phones
 
+def pyopenjtalk_g2p_prosody_kagoshimashi(text: str, drop_unvoiced_vowels: bool = True) -> List[str]:
+    """Extract phoneme + prosoody symbol sequence from input full-context labels.
+
+    The algorithm is based on `Prosodic features control by symbols as input of
+    sequence-to-sequence acoustic modeling for neural TTS`_ with some r9y9's tweaks.
+
+    Args:
+        text (str): Input text.
+        drop_unvoiced_vowels (bool): whether to drop unvoiced vowels.
+
+    Returns:
+        List[str]: List of phoneme + prosody symbols.
+
+    Examples:
+        >>> from espnet2.text.phoneme_tokenizer import pyopenjtalk_g2p_prosody
+        >>> pyopenjtalk_g2p_prosody("こんにちは。")
+        ['^', 'k', 'o', '[', 'N', 'n', 'i', 'ch', 'i', 'w', 'a', '$']
+
+    .. _`Prosodic features control by symbols as input of sequence-to-sequence acoustic
+        modeling for neural TTS`: https://doi.org/10.1587/transinf.2020EDP7104
+
+    """
+    url = os.getenv("KAGOSHIMA_PROSODY_API", "http://localhost:8000/estimate")
+
+    try:
+        res = requests.post(url, json={"text": text}, timeout=10)
+        res.raise_for_status()
+    except requests.RequestException as e:
+        raise RuntimeError(
+            "Kagoshima prosody API is not available. "
+            "Please start docker compose first."
+        ) from e
+
+    data = res.json()
+
+    if "result" not in data:
+        raise RuntimeError(f"Unexpected API response: {data}")
+    
+    phones = data["result"]
+
+    if isinstance(phones, str):
+        phones = phones.strip().split()
+
+    return phones
 
 def _numeric_feature_by_regex(regex, s):
     match = re.search(regex, s)

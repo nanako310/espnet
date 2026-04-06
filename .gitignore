@@ -37,6 +37,8 @@ constraints.txt
 featbin
 ubuntu16-featbin.tar.gz
 
+venv/
+
 out/config.yaml
 hub/
 
