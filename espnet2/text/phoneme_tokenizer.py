@@ -508,6 +508,8 @@ class PhonemeTokenizer(AbsTokenizer):
             self.g2p = pyopenjtalk_g2p_accent_with_pause
         elif g2p_type == "pyopenjtalk_prosody":
             self.g2p = pyopenjtalk_g2p_prosody
+        elif g2p_type == "pyopenjtalk_prosody_kagoshimashi":
+            self.g2p = pyopenjtalk_g2p_prosody_kagoshimashi
         elif g2p_type == "pypinyin_g2p":
             self.g2p = pypinyin_g2p
         elif g2p_type == "pypinyin_g2p_phone":
